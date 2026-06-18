@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShopNest – My Cart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --primary:      #FF6B35;
+      --primary-dark: #e85a22;
+      --secondary:    #1A1A2E;
+      --bg:           #F8F9FA;
+      --card-bg:      #FFFFFF;
+      --text:         #1A1A2E;
+      --muted:        #6B7280;
+      --border:       #E5E7EB;
+      --success:      #10B981;
+      --danger:       #EF4444;
+      --radius:       12px;
+      --shadow:       0 4px 20px rgba(0,0,0,0.08);
+      --transition:   0.25s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    h1,h2,h3,h4 { font-family: 'Poppins', sans-serif; }
+    a { text-decoration: none; color: inherit; }
+
+    /* NOTIFICATION */
+    #notification {
+      position: fixed; top: 80px; right: 20px; z-index: 9999;
+      background: var(--secondary); color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 0.9rem; font-weight: 500;
+      transform: translateX(120%); transition: transform 0.35s ease;
+      border-left: 4px solid var(--primary); max-width: 300px;
+    }
+    #notification.show { transform: translateX(0); }
+
+    /* NAVBAR */
+    .navbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--secondary);
+      padding: 0 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    .nav-logo { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .nav-logo span { color: var(--primary); }
+    .nav-links { display: flex; align-items: center; gap: 8px; list-style: none; }
+    .nav-links a {
+      color: rgba(255,255,255,0.85); font-size: 0.88rem; font-weight: 500;
+      padding: 6px 10px; border-radius: 6px;
+      transition: color var(--transition), background var(--transition);
+    }
+    .nav-links a:hover, .nav-links a.active { color: #fff; background: rgba(255,255,255,0.08); }
+    .nav-links a.active { color: var(--primary); }
+    .nav-cart {
+      position: relative; cursor: pointer;
+      color: rgba(255,255,255,0.85); font-size: 1.2rem;
+      padding: 6px 10px; border-radius: 6px;
+    }
+    .cart-badge {
+      position: absolute; top: 0; right: 2px;
+      background: var(--primary); color: #fff;
+      font-size: 0.65rem; font-weight: 700;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+    .hamburger span { width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.3s; }
+    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0;
+      background: var(--secondary); z-index: 999;
+      padding: 16px 5% 24px; flex-direction: column; gap: 4px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: rgba(255,255,255,0.85); padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-weight: 500; font-size: 1rem;
+    }
+
+    /* PAGE HEADER */
+    .page-header {
+      background: var(--secondary); padding: 40px 5%;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .page-header h1 { color: #fff; font-size: clamp(1.6rem, 3vw, 2rem); }
+    .page-header h1 span { color: var(--primary); }
+    .breadcrumb {
+      display: flex; align-items: center; gap: 8px;
+      color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-top: 4px;
+    }
+    .breadcrumb a { color: rgba(255,255,255,0.5); transition: color var(--transition); }
+    .breadcrumb a:hover { color: var(--primary); }
+    .breadcrumb i { font-size: 0.65rem; }
+
+    /* PROGRESS STEPS */
+    .progress-bar {
+      background: #fff; padding: 20px 5%;
+      border-bottom: 1px solid var(--border);
+    }
+    .steps {
+      display: flex; align-items: center;
+      max-width: 500px; margin: 0 auto;
+    }
+    .step {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--muted);
+    }
+    .step.active { color: var(--primary); }
+    .step.done { color: var(--success); }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--border); color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+    }
+    .step.active .step-num { background: var(--primary); color: #fff; }
+    .step.done .step-num { background: var(--success); color: #fff; }
+    .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 8px; }
+    .step-line.done { background: var(--success); }
+
+    /* MAIN LAYOUT */
+    .cart-layout {
+      display: grid; grid-template-columns: 1fr 360px;
+      gap: 24px; padding: 32px 5%; max-width: 1200px; margin: 0 auto;
+    }
+
+    /* CART ITEMS */
+    .cart-card {
+      background: var(--card-bg); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .cart-card-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cart-card-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .clear-cart-btn {
+      color: var(--danger); font-size: 0.83rem; font-weight: 600;
+      background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      transition: opacity var(--transition);
+    }
+    .clear-cart-btn:hover { opacity: 0.7; }
+
+    /* CART ITEM ROW */
+    .cart-item {
+      display: grid; grid-template-columns: 90px 1fr auto;
+      gap: 16px; padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .cart-item:last-child { border-bottom: none; }
+
+    .item-img {
+      width: 90px; height: 90px; border-radius: 10px;
+      overflow: hidden; background: #f3f4f6; flex-shrink: 0;
+    }
+    .item-img img { width: 100%; height: 100%; object-fit: cover; }
+
+    .item-details { display: flex; flex-direction: column; gap: 6px; }
+    .item-category {
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--muted);
+    }
+    .item-name { font-family: 'Poppins', sans-serif; font-size: 0.95rem; font-weight: 600; line-height: 1.3; }
+    .item-price-each { font-size: 0.82rem; color: var(--muted); }
+    .item-badge {
+      display: inline-block; background: rgba(255,107,53,0.1);
+      color: var(--primary); font-size: 0.7rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 10px; width: fit-content;
+    }
+
+    .item-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+    .qty-control {
+      display: flex; align-items: center; gap: 0;
+      border: 2px solid var(--border); border-radius: 8px; overflow: hidden;
+    }
+    .qty-btn {
+      width: 32px; height: 32px; background: var(--bg);
+      border: none; cursor: pointer; font-size: 1rem; color: var(--text);
+      transition: background var(--transition), color var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qty-btn:hover { background: var(--primary); color: #fff; }
+    .qty-num {
+      width: 36px; text-align: center; font-weight: 700;
+      font-size: 0.9rem; font-family: 'Poppins', sans-serif;
+      border: none; background: #fff; outline: none;
+    }
+    .item-total { font-family: 'Poppins', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+    .remove-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 0.8rem;
+      display: flex; align-items: center; gap: 4px;
+      transition: color var(--transition);
+      font-family: 'Inter', sans-serif;
+    }
+    .remove-btn:hover { color: var(--danger); }
+
+    /* EMPTY CART */
+    .empty-cart {
+      padding: 64px 24px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .empty-cart .empty-icon { font-size: 4rem; color: var(--border); }
+    .empty-cart h3 { font-size: 1.3rem; color: var(--muted); }
+    .empty-cart p { font-size: 0.9rem; color: var(--muted); max-width: 280px; }
+
+    /* COUPON */
+    .coupon-row {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px;
+    }
+    .coupon-input {
+      flex: 1; padding: 10px 14px; border-radius: 8px;
+      border: 2px solid var(--border); font-size: 0.9rem;
+      outline: none; font-family: 'Inter', sans-serif;
+      transition: border-color var(--transition);
+    }
+    .coupon-input:focus { border-color: var(--primary); }
+    .coupon-btn {
+      background: var(--secondary); color: #fff;
+      padding: 10px 18px; border-radius: 8px; border: none;
+      font-weight: 600; font-size: 0.88rem; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: background var(--transition);
+      white-space: nowrap;
+    }
+    .coupon-btn:hover { background: var(--primary); }
+
+    /* ORDER SUMMARY */
+    .summary-card {
+      background: var(--card-bg); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px;
+      height: fit-content; position: sticky; top: 88px;
+    }
+    .summary-card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+    .summary-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .summary-row:last-of-type { border-bottom: none; }
+    .summary-row .label { color: var(--muted); }
+    .summary-row .value { font-weight: 600; }
+    .summary-row.discount .value { color: var(--success); }
+    .summary-row.total {
+      font-size: 1.05rem; font-weight: 700;
+      border-top: 2px solid var(--border);
+      margin-top: 8px; padding-top: 16px;
+    }
+    .summary-row.total .value { color: var(--primary); font-size: 1.2rem; }
+
+    .checkout-btn {
+      width: 100%; background: var(--primary); color: #fff;
+      padding: 14px; border-radius: 30px; border: none;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+      margin-top: 20px;
+    }
+    .checkout-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255,107,53,0.3);
+    }
+    .checkout-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .continue-btn {
+      width: 100%; background: transparent; color: var(--text);
+      padding: 12px; border-radius: 30px;
+      border: 2px solid var(--border);
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: border-color var(--transition), color var(--transition);
+      margin-top: 10px;
+    }
+    .continue-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .secure-badges {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
+    }
+    .badge-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--muted); }
+    .badge-item i { color: var(--success); }
+
+    /* RECOMMENDED */
+    .recommended-section { padding: 32px 5%; max-width: 1200px; margin: 0 auto; }
+    .recommended-section h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+    .recommended-section h2 span { color: var(--primary); }
+    .rec-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .rec-card {
+      background: var(--card-bg); border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--shadow);
+      transition: transform var(--transition), box-shadow var(--transition);
+      cursor: pointer;
+    }
+    .rec-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(255,107,53,0.15); }
+    .rec-img { height: 140px; overflow: hidden; background: #f3f4f6; }
+    .rec-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+    .rec-card:hover .rec-img img { transform: scale(1.06); }
+    .rec-info { padding: 12px; }
+    .rec-name { font-family: 'Poppins', sans-serif; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+    .rec-footer { display: flex; align-items: center; justify-content: space-between; }
+    .rec-price { color: var(--primary); font-weight: 700; font-size: 0.9rem; font-family: 'Poppins', sans-serif; }
+    .rec-add {
+      background: var(--secondary); color: #fff;
+      border: none; padding: 5px 10px; border-radius: 14px;
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      transition: background var(--transition);
+    }
+    .rec-add:hover { background: var(--primary); }
+
+    /* FOOTER */
+    .mini-footer {
+      background: var(--secondary); color: rgba(255,255,255,0.5);
+      text-align: center; padding: 20px 5%; font-size: 0.83rem;
+      margin-top: 48px;
+    }
+    .mini-footer span { color: var(--primary); }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .cart-layout { grid-template-columns: 1fr; }
+      .summary-card { position: static; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .page-header { padding: 28px 5%; }
+      .cart-layout { padding: 16px 4%; }
+      .cart-item { grid-template-columns: 70px 1fr; gap: 12px; }
+      .item-controls { flex-direction: row; align-items: center; justify-content: space-between; grid-column: 1 / -1; }
+      .item-img { width: 70px; height: 70px; }
+      .cart-card-header, .cart-item, .coupon-row { padding: 16px; }
+      .rec-grid { grid-template-columns: repeat(2, 1fr); }
+      .steps { gap: 0; }
+      .step span { display: none; }
+    }
+    @media (max-width: 380px) {
+      .rec-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="notification"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">Shop<span>Nest</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="index.html#featured">Products</a></li>
+    <li><a href="index.html#deals">Deals</a></li>
+    <li><a href="index.html#electronics">Electronics</a></li>
+    <li><a href="cart.html" class="active">Cart</a></li>
+  </ul>
+  <a href="cart.html" class="nav-cart">
+    <i class="fas fa-shopping-cart"></i>
+    <span class="cart-badge" id="cartCount">0</span>
+  </a>
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html">🏠 Home</a>
+  <a href="index.html#featured">🛍️ Products</a>
+  <a href="index.html#deals">🔥 Deals</a>
+  <a href="cart.html">🛒 Cart</a>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div>
+    <h1>My <span>Cart</span></h1>
+    <div class="breadcrumb">
+      <a href="index.html">Home</a>
+      <i class="fas fa-chevron-right"></i>
+      <span>Cart</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS STEPS -->
+<div class="progress-bar">
+  <div class="steps">
+    <div class="step active">
+      <div class="step-num">1</div>
+      <span>Cart</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <span>Checkout</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <span>Confirmation</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="cart-layout">
+
+  <!-- LEFT: CART ITEMS -->
+  <div>
+    <div class="cart-card">
+      <div class="cart-card-header">
+        <h2>Cart Items (<span id="itemCount">0</span>)</h2>
+        <button class="clear-cart-btn" onclick="clearCart()">
+          <i class="fas fa-trash"></i> Clear All
+        </button>
+      </div>
+      <div id="cartItemsContainer">
+        <!-- Injected by JS -->
+      </div>
+      <!-- COUPON -->
+      <div class="coupon-row">
+        <input class="coupon-input" id="couponInput" type="text" placeholder="Enter coupon code (try: SAVE10)"/>
+        <button class="coupon-btn" onclick="applyCoupon()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: ORDER SUMMARY -->
+  <div>
+    <div class="summary-card">
+      <h2>Order Summary</h2>
+
+      <div class="summary-row">
+        <span class="label">Subtotal (<span id="summaryCount">0</span> items)</span>
+        <span class="value" id="subtotal">$0.00</span>
+      </div>
+      <div class="summary-row discount" id="discountRow" style="display:none">
+        <span class="label">Discount (10%)</span>
+        <span class="value" id="discountVal">-$0.00</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Shipping</span>
+        <span class="value" id="shippingVal">Free</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Tax (8%)</span>
+        <span class="value" id="taxVal">$0.00</span>
+      </div>
+      <div class="summary-row total">
+        <span class="label">Total</span>
+        <span class="value" id="totalVal">$0.00</span>
+      </div>
+
+      <button class="checkout-btn" id="checkoutBtn" onclick="goCheckout()">
+        <i class="fas fa-lock"></i> Proceed to Checkout
+      </button>
+      <a href="index.html">
+        <button class="continue-btn">
+          <i class="fas fa-arrow-left"></i> Continue Shopping
+        </button>
+      </a>
+
+      <div class="secure-badges">
+        <div class="badge-item"><i class="fas fa-shield-alt"></i> Secure</div>
+        <div class="badge-item"><i class="fas fa-truck"></i> Free Shipping</div>
+        <div class="badge-item"><i class="fas fa-undo"></i> Easy Returns</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECOMMENDED -->
+<div class="recommended-section">
+  <h2>You Might Also <span>Like</span></h2>
+  <div class="rec-grid" id="recGrid"></div>
+</div>
+
+<!-- FOOTER -->
+<div class="mini-footer">
+  © 2026 <span>ShopNest</span>. All rights reserved.
+</div>
+
+<script>
+  /* ── DATA ─────────────────────────────────────── */
+  const recommended = [
+    { id:201, name:'Wireless Earbuds', price:34.99, img:'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&q=80', category:'electronics' },
+    { id:202, name:'Canvas Tote Bag', price:18.99, img:'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80', category:'fashion' },
+    { id:203, name:'Scented Candle Set', price:24.99, img:'https://images.unsplash.com/photo-1602028915047-37269d1a73f7?w=400&q=80', category:'home' },
+    { id:204, name:'Resistance Bands Kit', price:19.99, img:'https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400&q=80', category:'sports' },
+  ];
+
+  /* ── STATE ─────────────────────────────────────── */
+  let cart = JSON.parse(localStorage.getItem('shopnest_cart') || '[]');
+  let discountApplied = false;
+  const DISCOUNT = 0.10;
+  const TAX = 0.08;
+  const FREE_SHIPPING_THRESHOLD = 50;
+
+  /* ── HELPERS ───────────────────────────────────── */
+  function saveCart() { localStorage.setItem('shopnest_cart', JSON.stringify(cart)); }
+
+  function showNotification(msg) {
+    const el = document.getElementById('notification');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  function toggleMenu() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+    document.getElementById('hamburger').classList.toggle('active');
+  }
+
+  /* ── RENDER CART ───────────────────────────────── */
+  function renderCart() {
+    const container = document.getElementById('cartItemsContainer');
+    const count = cart.reduce((s, i) => s + i.qty, 0);
+
+    document.getElementById('cartCount').textContent = count;
+    document.getElementById('itemCount').textContent = count;
+    document.getElementById('summaryCount').textContent = count;
+
+    if (cart.length === 0) {
+      container.innerHTML = `
+        <div class="empty-cart">
+          <div class="empty-icon"><i class="fas fa-shopping-cart"></i></div>
+          <h3>Your cart is empty</h3>
+          <p>Looks like you haven't added anything yet. Start shopping!</p>
+          <a href="index.html" style="margin-top:8px">
+            <button class="checkout-btn" style="width:auto;padding:12px 28px">
+              <i class="fas fa-shopping-bag"></i> Shop Now
+            </button>
+          </a>
+        </div>`;
+      document.getElementById('checkoutBtn').disabled = true;
+      updateSummary(0);
+      return;
+    }
+
+    document.getElementById('checkoutBtn').disabled = false;
+
+    container.innerHTML = cart.map(item => `
+      <div class="cart-item" id="item-${item.id}">
+        <div class="item-img">
+          <img src="${item.img}" alt="${item.name}" loading="lazy"/>
+        </div>
+        <div class="item-details">
+          <div class="item-category">${item.category}</div>
+          <div class="item-name">${item.name}</div>
+          <div class="item-price-each">$${item.price.toFixed(2)} each</div>
+          ${item.badge ? `<div class="item-badge">${item.badge}</div>` : ''}
+        </div>
+        <div class="item-controls">
+          <div class="qty-control">
+            <button class="qty-btn" onclick="changeQty(${item.id}, -1)"><i class="fas fa-minus"></i></button>
+            <span class="qty-num">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${item.id}, 1)"><i class="fas fa-plus"></i></button>
+          </div>
+          <div class="item-total">$${(item.price * item.qty).toFixed(2)}</div>
+          <button class="remove-btn" onclick="removeItem(${item.id})">
+            <i class="fas fa-trash-alt"></i> Remove
+          </button>
+        </div>
+      </div>`).join('');
+
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    updateSummary(subtotal);
+  }
+
+  /* ── SUMMARY ───────────────────────────────────── */
+  function updateSummary(subtotal) {
+    const discount = discountApplied ? subtotal * DISCOUNT : 0;
+    const afterDiscount = subtotal - discount;
+    const shipping = afterDiscount >= FREE_SHIPPING_THRESHOLD || afterDiscount === 0 ? 0 : 5.99;
+    const tax = afterDiscount * TAX;
+    const total = afterDiscount + shipping + tax;
+
+    document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('taxVal').textContent = `$${tax.toFixed(2)}`;
+    document.getElementById('shippingVal').textContent = shipping === 0 ? '🎉 Free' : `$${shipping.toFixed(2)}`;
+    document.getElementById('totalVal').textContent = `$${total.toFixed(2)}`;
+
+    const discRow = document.getElementById('discountRow');
+    if (discountApplied) {
+      discRow.style.display = 'flex';
+      document.getElementById('discountVal').textContent = `-$${discount.toFixed(2)}`;
+    } else {
+      discRow.style.display = 'none';
+    }
+  }
+
+  /* ── ACTIONS ───────────────────────────────────── */
+  function changeQty(id, delta) {
+    const item = cart.find(x => x.id === id);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) {
+      removeItem(id); return;
+    }
+    saveCart(); renderCart();
+  }
+
+  function removeItem(id) {
+    const item = cart.find(x => x.id === id);
+    cart = cart.filter(x => x.id !== id);
+    saveCart(); renderCart();
+    showNotification(`🗑️ "${item?.name}" removed from cart.`);
+  }
+
+  function clearCart() {
+    if (cart.length === 0) return;
+    if (confirm('Remove all items from your cart?')) {
+      cart = []; saveCart(); renderCart();
+      showNotification('🗑️ Cart cleared.');
+    }
+  }
+
+  function applyCoupon() {
+    const code = document.getElementById('couponInput').value.trim().toUpperCase();
+    if (code === 'SAVE10') {
+      if (discountApplied) { showNotification('✅ Coupon already applied!'); return; }
+      discountApplied = true;
+      const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      updateSummary(subtotal);
+      showNotification('🎉 Coupon SAVE10 applied! 10% off.');
+    } else {
+      showNotification('❌ Invalid coupon code. Try: SAVE10');
+    }
+  }
+
+  function goCheckout() {
+    if (cart.length === 0) return;
+    window.location.href = 'checkout.html';
+  }
+
+  /* ── RECOMMENDED ───────────────────────────────── */
+  function renderRecommended() {
+    document.getElementById('recGrid').innerHTML = recommended.map(p => `
+      <div class="rec-card">
+        <div class="rec-img"><img src="${p.img}" alt="${p.name}" loading="lazy"/></div>
+        <div class="rec-info">
+          <div class="rec-name">${p.name}</div>
+          <div class="rec-footer">
+            <span class="rec-price">$${p.price.toFixed(2)}</span>
+            <button class="rec-add" onclick="addRec(${p.id})"><i class="fas fa-plus"></i> Add</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function addRec(id) {
+    const p = recommended.find(x => x.id === id);
+    if (!p) return;
+    const existing = cart.find(x => x.id === id);
+    if (existing) existing.qty++;
+    else cart.push({ ...p, qty: 1, badge: 'New', old: null, rating: 4.5, reviews: 0 });
+    saveCart(); renderCart();
+    showNotification(`✅ "${p.name}" added to cart!`);
+  }
+
+  /* ── INIT ──────────────────────────────────────── */
+  renderCart();
+  renderRecommended();
+</script>
+</body>
+</html>

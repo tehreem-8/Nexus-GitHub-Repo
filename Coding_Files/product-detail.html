@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShopNest – Product Detail</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --primary:      #FF6B35;
+      --primary-dark: #e85a22;
+      --secondary:    #1A1A2E;
+      --bg:           #F8F9FA;
+      --card-bg:      #FFFFFF;
+      --text:         #1A1A2E;
+      --muted:        #6B7280;
+      --border:       #E5E7EB;
+      --success:      #10B981;
+      --accent:       #FFD700;
+      --radius:       12px;
+      --shadow:       0 4px 20px rgba(0,0,0,0.08);
+      --transition:   0.25s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    h1,h2,h3,h4 { font-family: 'Poppins', sans-serif; }
+    a { text-decoration: none; color: inherit; }
+    img { max-width: 100%; display: block; }
+
+    /* NOTIFICATION */
+    #notification {
+      position: fixed; top: 80px; right: 20px; z-index: 9999;
+      background: var(--secondary); color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 0.9rem; font-weight: 500;
+      transform: translateX(120%); transition: transform 0.35s ease;
+      border-left: 4px solid var(--primary); max-width: 300px;
+    }
+    #notification.show { transform: translateX(0); }
+
+    /* NAVBAR */
+    .navbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--secondary);
+      padding: 0 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    .nav-logo { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .nav-logo span { color: var(--primary); }
+    .nav-links { display: flex; align-items: center; gap: 8px; list-style: none; }
+    .nav-links a {
+      color: rgba(255,255,255,0.85); font-size: 0.88rem; font-weight: 500;
+      padding: 6px 10px; border-radius: 6px;
+      transition: color var(--transition), background var(--transition);
+    }
+    .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .nav-cart {
+      position: relative; cursor: pointer;
+      color: rgba(255,255,255,0.85); font-size: 1.2rem;
+      padding: 6px 10px;
+    }
+    .nav-cart:hover { color: var(--primary); }
+    .cart-badge {
+      position: absolute; top: 0; right: 2px;
+      background: var(--primary); color: #fff;
+      font-size: 0.65rem; font-weight: 700;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+    .hamburger span { width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.3s; }
+    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0;
+      background: var(--secondary); z-index: 999;
+      padding: 16px 5% 24px; flex-direction: column; gap: 4px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: rgba(255,255,255,0.85); padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-weight: 500; font-size: 1rem;
+    }
+
+    /* BREADCRUMB */
+    .breadcrumb-bar {
+      background: #fff; padding: 14px 5%;
+      border-bottom: 1px solid var(--border);
+    }
+    .breadcrumb {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.85rem; color: var(--muted); flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--muted); transition: color var(--transition); }
+    .breadcrumb a:hover { color: var(--primary); }
+    .breadcrumb i { font-size: 0.6rem; }
+    .breadcrumb span { color: var(--text); font-weight: 500; }
+
+    /* MAIN PRODUCT SECTION */
+    .product-section {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 40px; padding: 40px 5%; max-width: 1200px; margin: 0 auto;
+    }
+
+    /* IMAGE GALLERY */
+    .gallery { display: flex; flex-direction: column; gap: 12px; }
+    .main-img {
+      width: 100%; aspect-ratio: 1/1;
+      border-radius: 16px; overflow: hidden;
+      background: #f3f4f6; position: relative;
+      box-shadow: var(--shadow);
+    }
+    .main-img img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .main-img:hover img { transform: scale(1.05); }
+    .img-badge {
+      position: absolute; top: 16px; left: 16px;
+      background: var(--primary); color: #fff;
+      font-size: 0.8rem; font-weight: 700;
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .img-badge.new { background: var(--success); }
+    .img-badge.sale { background: #EF4444; }
+
+    .thumbnails {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .thumb {
+      width: 72px; height: 72px; border-radius: 10px;
+      overflow: hidden; cursor: pointer;
+      border: 3px solid transparent;
+      transition: border-color var(--transition);
+      background: #f3f4f6; flex-shrink: 0;
+    }
+    .thumb.active { border-color: var(--primary); }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* PRODUCT INFO */
+    .product-info { display: flex; flex-direction: column; gap: 16px; }
+
+    .info-category {
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--primary);
+    }
+    .info-title { font-size: clamp(1.4rem, 2.5vw, 2rem); font-weight: 800; line-height: 1.2; }
+
+    .info-rating { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .stars { color: var(--accent); font-size: 0.9rem; }
+    .rating-num { font-weight: 700; font-size: 0.95rem; }
+    .rating-count { color: var(--muted); font-size: 0.85rem; }
+    .in-stock { color: var(--success); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+    .info-price { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .price-current { font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 800; color: var(--primary); }
+    .price-old { font-size: 1.1rem; color: var(--muted); text-decoration: line-through; }
+    .price-save {
+      background: rgba(16,185,129,0.1); color: var(--success);
+      font-size: 0.8rem; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .divider { height: 1px; background: var(--border); }
+
+    /* COLOR SELECTOR */
+    .selector-label { font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; }
+    .color-options { display: flex; gap: 10px; flex-wrap: wrap; }
+    .color-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer; border: 3px solid transparent;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .color-dot:hover, .color-dot.active { border-color: var(--text); transform: scale(1.15); }
+
+    /* SIZE SELECTOR */
+    .size-options { display: flex; gap: 8px; flex-wrap: wrap; }
+    .size-btn {
+      padding: 7px 16px; border-radius: 8px;
+      border: 2px solid var(--border); background: #fff;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: all var(--transition);
+    }
+    .size-btn:hover, .size-btn.active {
+      border-color: var(--primary); background: var(--primary); color: #fff;
+    }
+    .size-btn.unavailable { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+
+    /* QTY + ACTIONS */
+    .qty-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .qty-control {
+      display: flex; align-items: center;
+      border: 2px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .qty-btn {
+      width: 40px; height: 44px; background: var(--bg);
+      border: none; cursor: pointer; font-size: 1.1rem;
+      color: var(--text); transition: background var(--transition), color var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qty-btn:hover { background: var(--primary); color: #fff; }
+    .qty-num {
+      width: 52px; text-align: center; font-weight: 700;
+      font-size: 1rem; font-family: 'Poppins', sans-serif;
+      border: none; background: #fff; outline: none; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .action-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-add-cart {
+      flex: 1; min-width: 160px;
+      background: var(--primary); color: #fff;
+      padding: 14px 24px; border-radius: 30px; border: none;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    }
+    .btn-add-cart:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255,107,53,0.3);
+    }
+    .btn-buy-now {
+      flex: 1; min-width: 160px;
+      background: var(--secondary); color: #fff;
+      padding: 14px 24px; border-radius: 30px; border: none;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background var(--transition), transform var(--transition);
+    }
+    .btn-buy-now:hover { background: #000; transform: translateY(-2px); }
+    .btn-wishlist {
+      width: 50px; height: 50px; border-radius: 50%;
+      border: 2px solid var(--border); background: #fff;
+      cursor: pointer; font-size: 1.1rem; color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition); flex-shrink: 0;
+    }
+    .btn-wishlist:hover, .btn-wishlist.active { border-color: #EF4444; color: #EF4444; background: #fff0f0; }
+
+    /* DELIVERY INFO */
+    .delivery-info {
+      background: var(--bg); border-radius: 12px; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .delivery-row { display: flex; align-items: center; gap: 12px; font-size: 0.88rem; }
+    .delivery-row i { color: var(--primary); width: 18px; text-align: center; }
+    .delivery-row strong { font-weight: 600; }
+
+    /* TABS */
+    .tabs-section { padding: 0 5% 48px; max-width: 1200px; margin: 0 auto; }
+    .tabs-header {
+      display: flex; gap: 0; border-bottom: 2px solid var(--border);
+      margin-bottom: 28px; overflow-x: auto; scrollbar-width: none;
+    }
+    .tabs-header::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      padding: 12px 24px; background: none; border: none;
+      font-size: 0.92rem; font-weight: 600; cursor: pointer;
+      color: var(--muted); white-space: nowrap;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      font-family: 'Poppins', sans-serif;
+      transition: color var(--transition), border-color var(--transition);
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* DESCRIPTION TAB */
+    .desc-text { color: var(--muted); line-height: 1.8; margin-bottom: 20px; }
+    .features-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .features-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.92rem;
+    }
+    .features-list li i { color: var(--success); margin-top: 3px; flex-shrink: 0; }
+
+    /* SPECS TAB */
+    .specs-table { width: 100%; border-collapse: collapse; }
+    .specs-table tr { border-bottom: 1px solid var(--border); }
+    .specs-table tr:last-child { border-bottom: none; }
+    .specs-table td { padding: 12px 16px; font-size: 0.9rem; }
+    .specs-table td:first-child { color: var(--muted); font-weight: 500; width: 40%; background: var(--bg); }
+    .specs-table td:last-child { font-weight: 600; }
+
+    /* REVIEWS TAB */
+    .reviews-summary {
+      display: flex; gap: 32px; align-items: center;
+      margin-bottom: 28px; flex-wrap: wrap;
+    }
+    .big-rating { text-align: center; }
+    .big-rating .num { font-family: 'Poppins', sans-serif; font-size: 4rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .big-rating .stars { font-size: 1.1rem; margin: 4px 0; }
+    .big-rating p { font-size: 0.8rem; color: var(--muted); }
+    .rating-bars { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
+    .rating-bar-row { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; }
+    .bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+    .review-cards { display: flex; flex-direction: column; gap: 16px; }
+    .review-card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .review-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .review-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; flex-shrink: 0;
+    }
+    .review-name { font-weight: 600; font-size: 0.92rem; }
+    .review-date { font-size: 0.78rem; color: var(--muted); }
+    .review-stars { color: var(--accent); font-size: 0.8rem; }
+    .review-text { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+    .verified { font-size: 0.75rem; color: var(--success); font-weight: 600; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+
+    /* RELATED PRODUCTS */
+    .related-section { padding: 0 5% 64px; max-width: 1200px; margin: 0 auto; }
+    .related-section h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; }
+    .related-section h2 span { color: var(--primary); }
+    .related-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 16px;
+    }
+    .product-card {
+      background: var(--card-bg); border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--shadow);
+      transition: transform var(--transition), box-shadow var(--transition);
+      cursor: pointer;
+    }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 28px rgba(255,107,53,0.15); }
+    .product-img { height: 180px; overflow: hidden; background: #f3f4f6; position: relative; }
+    .product-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+    .product-card:hover .product-img img { transform: scale(1.07); }
+    .product-badge {
+      position: absolute; top: 8px; left: 8px;
+      background: var(--primary); color: #fff;
+      font-size: 0.68rem; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+    }
+    .product-badge.new { background: var(--success); }
+    .product-badge.sale { background: #EF4444; }
+    .product-info-card { padding: 14px; }
+    .product-name-card { font-family: 'Poppins', sans-serif; font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; line-height: 1.3; }
+    .product-footer-card { display: flex; align-items: center; justify-content: space-between; }
+    .price-card { color: var(--primary); font-weight: 700; font-family: 'Poppins', sans-serif; }
+    .add-btn-card {
+      background: var(--secondary); color: #fff;
+      border: none; padding: 6px 12px; border-radius: 16px;
+      font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      transition: background var(--transition);
+    }
+    .add-btn-card:hover { background: var(--primary); }
+
+    /* FOOTER */
+    .mini-footer {
+      background: var(--secondary); color: rgba(255,255,255,0.5);
+      text-align: center; padding: 20px 5%; font-size: 0.83rem;
+    }
+    .mini-footer span { color: var(--primary); }
+
+    /* RESPONSIVE */
+    @media (max-width: 860px) {
+      .product-section { grid-template-columns: 1fr; gap: 28px; padding: 24px 5%; }
+      .action-btns { flex-direction: column; }
+      .btn-add-cart, .btn-buy-now { width: 100%; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .info-title { font-size: 1.5rem; }
+      .price-current { font-size: 1.6rem; }
+      .tabs-section, .related-section { padding-left: 4%; padding-right: 4%; }
+      .tab-btn { padding: 10px 14px; font-size: 0.82rem; }
+      .related-grid { grid-template-columns: repeat(2, 1fr); }
+      .reviews-summary { flex-direction: column; gap: 16px; }
+    }
+    @media (max-width: 380px) {
+      .related-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="notification"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">Shop<span>Nest</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="index.html#featured">Products</a></li>
+    <li><a href="index.html#deals">Deals</a></li>
+    <li><a href="index.html#electronics">Electronics</a></li>
+    <li><a href="cart.html">Cart</a></li>
+  </ul>
+  <a href="cart.html" class="nav-cart">
+    <i class="fas fa-shopping-cart"></i>
+    <span class="cart-badge" id="cartCount">0</span>
+  </a>
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html">🏠 Home</a>
+  <a href="index.html#featured">🛍️ Products</a>
+  <a href="index.html#deals">🔥 Deals</a>
+  <a href="cart.html">🛒 Cart</a>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb-bar">
+  <div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="index.html#featured">Products</a>
+    <i class="fas fa-chevron-right"></i>
+    <span id="breadcrumbName">Product</span>
+  </div>
+</div>
+
+<!-- PRODUCT SECTION -->
+<div class="product-section">
+
+  <!-- GALLERY -->
+  <div class="gallery">
+    <div class="main-img">
+      <img id="mainImg" src="" alt="Product Image"/>
+      <span class="product-badge sale" id="mainBadge">Sale</span>
+    </div>
+    <div class="thumbnails" id="thumbnails"></div>
+  </div>
+
+  <!-- INFO -->
+  <div class="product-info">
+    <div class="info-category" id="infoCategory">Category</div>
+    <h1 class="info-title" id="infoTitle">Product Name</h1>
+
+    <div class="info-rating">
+      <span class="stars" id="infoStars"></span>
+      <span class="rating-num" id="infoRating">4.5</span>
+      <span class="rating-count" id="infoReviews">(0 reviews)</span>
+      <span class="in-stock"><i class="fas fa-circle" style="font-size:0.5rem"></i> In Stock</span>
+    </div>
+
+    <div class="info-price">
+      <span class="price-current" id="infoPrice">$0.00</span>
+      <span class="price-old" id="infoOldPrice"></span>
+      <span class="price-save" id="infoSave" style="display:none"></span>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- COLOR -->
+    <div>
+      <div class="selector-label">Color: <strong id="selectedColor">Black</strong></div>
+      <div class="color-options">
+        <div class="color-dot active" style="background:#1A1A2E" onclick="selectColor(this,'Black')" title="Black"></div>
+        <div class="color-dot" style="background:#FF6B35" onclick="selectColor(this,'Orange')" title="Orange"></div>
+        <div class="color-dot" style="background:#10B981" onclick="selectColor(this,'Green')" title="Green"></div>
+        <div class="color-dot" style="background:#6366F1" onclick="selectColor(this,'Purple')" title="Purple"></div>
+        <div class="color-dot" style="background:#F3F4F6;border:2px solid #ddd" onclick="selectColor(this,'White')" title="White"></div>
+      </div>
+    </div>
+
+    <!-- SIZE -->
+    <div id="sizeSection">
+      <div class="selector-label">Size: <strong id="selectedSize">M</strong></div>
+      <div class="size-options">
+        <button class="size-btn unavailable" onclick="selectSize(this,'XS')">XS</button>
+        <button class="size-btn" onclick="selectSize(this,'S')">S</button>
+        <button class="size-btn active" onclick="selectSize(this,'M')">M</button>
+        <button class="size-btn" onclick="selectSize(this,'L')">L</button>
+        <button class="size-btn" onclick="selectSize(this,'XL')">XL</button>
+        <button class="size-btn" onclick="selectSize(this,'XXL')">XXL</button>
+      </div>
+    </div>
+
+    <!-- QTY -->
+    <div class="qty-row">
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty(-1)"><i class="fas fa-minus"></i></button>
+        <div class="qty-num" id="qtyDisplay">1</div>
+        <button class="qty-btn" onclick="changeQty(1)"><i class="fas fa-plus"></i></button>
+      </div>
+      <span style="font-size:0.85rem;color:var(--muted)">Only <strong style="color:var(--primary)">12</strong> left!</span>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="action-btns">
+      <button class="btn-add-cart" onclick="addToCart()">
+        <i class="fas fa-shopping-cart"></i> Add to Cart
+      </button>
+      <button class="btn-buy-now" onclick="buyNow()">
+        <i class="fas fa-bolt"></i> Buy Now
+      </button>
+      <button class="btn-wishlist" id="wishlistBtn" onclick="toggleWishlist()" title="Wishlist">
+        <i class="far fa-heart"></i>
+      </button>
+    </div>
+
+    <!-- DELIVERY -->
+    <div class="delivery-info">
+      <div class="delivery-row">
+        <i class="fas fa-truck"></i>
+        <span><strong>Free Delivery</strong> on orders over $50</span>
+      </div>
+      <div class="delivery-row">
+        <i class="fas fa-undo"></i>
+        <span><strong>30-Day Returns</strong> — hassle-free</span>
+      </div>
+      <div class="delivery-row">
+        <i class="fas fa-shield-alt"></i>
+        <span><strong>2-Year Warranty</strong> included</span>
+      </div>
+      <div class="delivery-row">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>Estimated delivery: <strong>3–5 business days</strong></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-section">
+  <div class="tabs-header">
+    <button class="tab-btn active" onclick="switchTab(this,'desc')">Description</button>
+    <button class="tab-btn" onclick="switchTab(this,'specs')">Specifications</button>
+    <button class="tab-btn" onclick="switchTab(this,'reviews')">Reviews <span id="reviewBadge"></span></button>
+  </div>
+
+  <!-- DESCRIPTION -->
+  <div class="tab-content active" id="tab-desc">
+    <p class="desc-text" id="descText">Loading description...</p>
+    <ul class="features-list" id="featuresList"></ul>
+  </div>
+
+  <!-- SPECS -->
+  <div class="tab-content" id="tab-specs">
+    <table class="specs-table" id="specsTable"></table>
+  </div>
+
+  <!-- REVIEWS -->
+  <div class="tab-content" id="tab-reviews">
+    <div class="reviews-summary">
+      <div class="big-rating">
+        <div class="num" id="bigRating">4.5</div>
+        <div class="stars">★★★★½</div>
+        <p>out of 5</p>
+      </div>
+      <div class="rating-bars" id="ratingBars"></div>
+    </div>
+    <div class="review-cards" id="reviewCards"></div>
+  </div>
+</div>
+
+<!-- RELATED PRODUCTS -->
+<div class="related-section">
+  <h2>You May Also <span>Like</span></h2>
+  <div class="related-grid" id="relatedGrid"></div>
+</div>
+
+<!-- FOOTER -->
+<div class="mini-footer">© 2026 <span>ShopNest</span>. All rights reserved.</div>
+
+<script>
+  /* ── ALL PRODUCTS DATABASE ─────────────────────── */
+  const allProducts = [
+    {
+      id:1, name:'Floral Summer Dress', category:'Fashion', price:29.99, old:49.99,
+      rating:4.5, reviews:128, badge:'Sale',
+      img:'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600&q=80','https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80','https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600&q=80'],
+      desc:'A beautiful floral summer dress made from lightweight, breathable fabric. Perfect for warm weather outings, beach days, or casual gatherings. The vibrant floral print adds a touch of elegance to any occasion.',
+      features:['100% breathable cotton fabric','Machine washable','Available in multiple colors','Flattering A-line silhouette','UV protective weave'],
+      specs:[['Material','100% Cotton'],['Fit','Regular'],['Neckline','V-Neck'],['Length','Midi'],['Care','Machine Wash Cold'],['Origin','Made in Turkey']],
+      reviewList:[
+        { name:'Sarah M.', rating:5, date:'May 2026', text:'Absolutely love this dress! The fabric is so soft and it fits perfectly. Got so many compliments.' },
+        { name:'Amina K.', rating:4, date:'April 2026', text:'Great quality for the price. The color is exactly as shown. Shipping was fast too.' },
+        { name:'Priya L.', rating:5, date:'March 2026', text:'This is my third purchase of this dress in different colors. Always a hit!' },
+      ]
+    },
+    {
+      id:2, name:'Wireless Noise-Cancel Headphones', category:'Electronics', price:89.99, old:129.99,
+      rating:4.8, reviews:342, badge:'Hot',
+      img:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80','https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&q=80','https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=600&q=80'],
+      desc:'Premium wireless headphones featuring active noise cancellation technology. Enjoy crystal-clear audio with deep bass and crisp highs. Perfect for commuting, working from home, or just enjoying your favorite music.',
+      features:['Active Noise Cancellation (ANC)','40-hour battery life','Foldable design for portability','Built-in microphone for calls','Compatible with all Bluetooth devices'],
+      specs:[['Driver','40mm Dynamic'],['Frequency','20Hz–20kHz'],['Battery','40 hours'],['Charging','USB-C, 2hr full charge'],['Connectivity','Bluetooth 5.0'],['Weight','250g']],
+      reviewList:[
+        { name:'James T.', rating:5, date:'June 2026', text:'Best headphones I have ever owned. The ANC is incredible — blocks out everything.' },
+        { name:'Zara H.', rating:5, date:'May 2026', text:'Sound quality is top-notch. Battery lasts forever. Worth every penny.' },
+        { name:'Bilal R.', rating:4, date:'April 2026', text:'Very comfortable for long sessions. Slight pressure after 4+ hours but overall amazing.' },
+      ]
+    },
+    {
+      id:3, name:'Minimalist Wall Clock', category:'Home', price:34.99, old:null,
+      rating:4.3, reviews:67, badge:'New',
+      img:'https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?w=600&q=80','https://images.unsplash.com/photo-1507878866276-a947ef722fee?w=600&q=80','https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80'],
+      desc:'A sleek minimalist wall clock that complements any modern interior. Silent quartz movement ensures no ticking noise. Perfect for living rooms, bedrooms, or office spaces.',
+      features:['Silent quartz movement','12-inch diameter','Easy to hang — nail included','AA battery powered','Works in any room'],
+      specs:[['Diameter','30cm (12 inch)'],['Movement','Silent Quartz'],['Power','1x AA Battery'],['Frame','Aluminium'],['Glass','Mineral Crystal'],['Weight','400g']],
+      reviewList:[
+        { name:'Fatima N.', rating:4, date:'May 2026', text:'Looks exactly like the photo. Very minimal and elegant. Silent — no ticking at all.' },
+        { name:'Omar S.', rating:5, date:'March 2026', text:'Perfect for my home office. Clean design and very accurate.' },
+      ]
+    },
+    {
+      id:4, name:'Vitamin C Glow Serum', category:'Beauty', price:24.99, old:39.99,
+      rating:4.7, reviews:215, badge:'Sale',
+      img:'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80','https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=600&q=80','https://images.unsplash.com/photo-1601049676869-702ea24cfd58?w=600&q=80'],
+      desc:'A powerful Vitamin C serum that brightens skin, reduces dark spots, and boosts collagen production. Formulated with 20% stabilized Vitamin C for maximum effectiveness.',
+      features:['20% stabilized Vitamin C','Reduces dark spots in 2 weeks','Boosts collagen naturally','Suitable for all skin types','Dermatologist tested & approved'],
+      specs:[['Volume','30ml'],['Key Ingredient','Vitamin C 20%'],['Skin Type','All Types'],['Usage','Morning & Night'],['Fragrance','Fragrance-Free'],['Shelf Life','12 months']],
+      reviewList:[
+        { name:'Hana J.', rating:5, date:'June 2026', text:'My skin has never looked better. Dark spots fading after just 2 weeks of use!' },
+        { name:'Noor A.', rating:5, date:'May 2026', text:'Best serum I have tried. Light texture, absorbs fast and no irritation.' },
+        { name:'Layla R.', rating:4, date:'April 2026', text:'Good results but takes about a month to see significant change. Worth the wait!' },
+      ]
+    },
+    {
+      id:5, name:'Running Sneakers Pro', category:'Sports', price:74.99, old:99.99,
+      rating:4.6, reviews:189, badge:'Sale',
+      img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80','https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80','https://images.unsplash.com/photo-1584735175315-9d5df23be5f8?w=600&q=80'],
+      desc:'High-performance running sneakers designed for comfort and speed. Featuring advanced cushioning technology and breathable mesh upper for all-day wear.',
+      features:['Advanced foam cushioning','Breathable mesh upper','Non-slip rubber outsole','Lightweight at only 280g','Reflective strips for night safety'],
+      specs:[['Upper','Breathable Mesh'],['Sole','Rubber'],['Closure','Lace-up'],['Weight','280g per shoe'],['Drop','8mm'],['Best For','Road Running']],
+      reviewList:[
+        { name:'Ali K.', rating:5, date:'May 2026', text:'Amazing comfort! Ran a half marathon in these. Zero blisters and great support.' },
+        { name:'Carlos M.', rating:4, date:'April 2026', text:'Very light and breathable. Good for daily runs. Sizing runs slightly large.' },
+      ]
+    },
+    {
+      id:6, name:'Leather Crossbody Bag', category:'Fashion', price:59.99, old:null,
+      rating:4.4, reviews:93, badge:'New',
+      img:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80','https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80','https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&q=80'],
+      desc:'A stylish genuine leather crossbody bag with a spacious interior and multiple pockets. Perfect for everyday use, travel, or a night out.',
+      features:['Genuine full-grain leather','Adjustable shoulder strap','Multiple interior pockets','Gold-tone hardware','Water-resistant lining'],
+      specs:[['Material','Full-Grain Leather'],['Dimensions','28 x 20 x 8 cm'],['Strap','Adjustable 60–120cm'],['Closure','Zip + Magnetic'],['Lining','Nylon'],['Weight','480g']],
+      reviewList:[
+        { name:'Sofia B.', rating:5, date:'June 2026', text:'Quality is incredible! Looks even better in person. Gets so many compliments.' },
+        { name:'Mia C.', rating:4, date:'May 2026', text:'Beautiful bag. Leather is genuine and soft. Slightly smaller than expected but still love it.' },
+      ]
+    },
+    {
+      id:7, name:'Smart Watch Series 5', category:'Electronics', price:149.99, old:199.99,
+      rating:4.9, reviews:521, badge:'Hot',
+      img:'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80','https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&q=80','https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600&q=80'],
+      desc:'The ultimate smartwatch with health monitoring, GPS tracking, and a stunning AMOLED display. Stay connected and track your fitness goals effortlessly.',
+      features:['1.4" AMOLED Always-On Display','Heart rate & SpO2 monitoring','Built-in GPS tracking','7-day battery life','Water resistant to 50 meters'],
+      specs:[['Display','1.4" AMOLED 454x454px'],['Battery','7 days (typical)'],['GPS','Built-in'],['Water Resistance','5ATM (50m)'],['Sensors','Heart Rate, SpO2, Gyroscope'],['Compatibility','iOS & Android']],
+      reviewList:[
+        { name:'David L.', rating:5, date:'June 2026', text:'Best smartwatch at this price point. GPS is accurate and battery lasts a full week.' },
+        { name:'Emma W.', rating:5, date:'May 2026', text:'Display is gorgeous. Health tracking is very accurate. Highly recommend!' },
+        { name:'Hassan A.', rating:5, date:'April 2026', text:'Switched from a much more expensive brand. This matches it in almost every way.' },
+      ]
+    },
+    {
+      id:8, name:'Ceramic Coffee Mug Set', category:'Home', price:19.99, old:null,
+      rating:4.2, reviews:44, badge:'New',
+      img:'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=600&q=80','https://images.unsplash.com/photo-1594213114543-5a5e0620b684?w=600&q=80','https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&q=80'],
+      desc:'A beautiful set of 4 handcrafted ceramic mugs. Each mug has a unique speckled glaze finish. Microwave and dishwasher safe.',
+      features:['Set of 4 mugs (350ml each)','Handcrafted ceramic','Microwave & dishwasher safe','Unique speckled glaze','Lead-free & food safe'],
+      specs:[['Quantity','4 Mugs'],['Capacity','350ml each'],['Material','Stoneware Ceramic'],['Microwave','Yes'],['Dishwasher','Yes'],['Height','10cm']],
+      reviewList:[
+        { name:'Lena P.', rating:4, date:'April 2026', text:'Lovely mugs! Great quality and the glazing is beautiful. Perfect gift.' },
+        { name:'Tom R.', rating:5, date:'March 2026', text:'Exactly as described. Solid and well-made. Coffee tastes better in these somehow!' },
+      ]
+    },
+    {
+      id:101, name:'Phone Case Premium', category:'Electronics', price:14.99, old:24.99,
+      rating:4.5, reviews:312, badge:'Hot',
+      img:'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&q=80','https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=600&q=80'],
+      desc:'Military-grade drop protection phone case with a slim profile. Raised bezels protect screen and camera.',
+      features:['Military-grade drop protection','Slim, lightweight design','Raised camera & screen bezels','Wireless charging compatible','Precise cutouts'],
+      specs:[['Material','TPU + PC'],['Drop Protection','MIL-STD-810G'],['Weight','35g'],['Wireless Charging','Yes'],['Thickness','1.2mm'],['Compatibility','Universal fit models']],
+      reviewList:[{ name:'Kevin M.', rating:5, date:'May 2026', text:'Dropped my phone 3 times already — not a scratch. Great case!' }]
+    },
+    {
+      id:102, name:'USB-C Hub 7-in-1', category:'Electronics', price:39.99, old:59.99,
+      rating:4.6, reviews:178, badge:'Sale',
+      img:'https://images.unsplash.com/photo-1625948515291-069a4e39f3e7?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1625948515291-069a4e39f3e7?w=600&q=80','https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=600&q=80'],
+      desc:'Expand your laptop connectivity with this 7-in-1 USB-C hub. Includes HDMI 4K, USB-A ports, SD card reader, and 100W PD charging.',
+      features:['4K HDMI output','3x USB-A 3.0 ports','SD & microSD card reader','100W Power Delivery','Plug and play — no drivers needed'],
+      specs:[['Ports','7-in-1'],['HDMI','4K@30Hz'],['USB-A','3x USB 3.0'],['PD Charging','100W'],['Cable Length','20cm'],['Compatibility','USB-C laptops']],
+      reviewList:[{ name:'Rachel T.', rating:5, date:'June 2026', text:'Works perfectly with my MacBook. The 4K output is crisp and all ports work great.' }]
+    },
+    {
+      id:103, name:'Mechanical Keyboard', category:'Electronics', price:79.99, old:null,
+      rating:4.8, reviews:267, badge:'New',
+      img:'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&q=80','https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=600&q=80'],
+      desc:'Compact TKL mechanical keyboard with RGB backlight and tactile switches. Perfect for gaming and productivity.',
+      features:['Tactile Blue switches','Per-key RGB lighting','TKL compact layout','N-key rollover','Detachable USB-C cable'],
+      specs:[['Layout','TKL (87 keys)'],['Switch','Blue Tactile'],['Backlight','Per-key RGB'],['Interface','USB-C detachable'],['Polling Rate','1000Hz'],['Weight','780g']],
+      reviewList:[{ name:'Ahmed Z.', rating:5, date:'May 2026', text:'Typing feel is incredible. The RGB looks amazing and the build quality is solid.' }]
+    },
+    {
+      id:104, name:'Webcam 1080p HD', category:'Electronics', price:49.99, old:69.99,
+      rating:4.4, reviews:134, badge:'Sale',
+      img:'https://images.unsplash.com/photo-1616348436168-de43ad0db179?w=600&q=80',
+      thumbs:['https://images.unsplash.com/photo-1616348436168-de43ad0db179?w=600&q=80','https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=600&q=80'],
+      desc:'Full HD 1080p webcam with built-in stereo microphone and auto-focus. Plug and play for Zoom, Teams, and all video calling apps.',
+      features:['1080p @ 30fps video','Auto-focus with face detection','Built-in stereo microphone','Universal clip mount','Plug & play — no drivers'],
+      specs:[['Resolution','1920x1080 (1080p)'],['Frame Rate','30fps'],['Focus','Autofocus'],['Microphone','Built-in Stereo'],['Connection','USB-A'],['Cable Length','1.5m']],
+      reviewList:[{ name:'Linda S.', rating:4, date:'April 2026', text:'Great image quality for the price. Microphone is decent. Easy to set up.' }]
+    },
+  ];
+
+  /* ── STATE ─────────────────────────────────────── */
+  let cart = JSON.parse(localStorage.getItem('shopnest_cart') || '[]');
+  let qty = 1;
+  let currentProduct = null;
+  let wishlisted = false;
+
+  /* ── LOAD PRODUCT FROM URL ─────────────────────── */
+  function getProductId() {
+    const params = new URLSearchParams(window.location.search);
+    return parseInt(params.get('id')) || 1;
+  }
+
+  function loadProduct() {
+    const id = getProductId();
+    currentProduct = allProducts.find(p => p.id === id) || allProducts[0];
+    const p = currentProduct;
+
+    // Breadcrumb
+    document.getElementById('breadcrumbName').textContent = p.name;
+    document.title = `ShopNest – ${p.name}`;
+
+    // Main image
+    document.getElementById('mainImg').src = p.img;
+    document.getElementById('mainImg').alt = p.name;
+
+    // Badge
+    const badge = document.getElementById('mainBadge');
+    badge.textContent = p.badge;
+    badge.className = 'product-badge ' + (p.badge === 'New' ? 'new' : p.badge === 'Sale' ? 'sale' : '');
+
+    // Thumbnails
+    document.getElementById('thumbnails').innerHTML = p.thumbs.map((t, i) =>
+      `<div class="thumb ${i===0?'active':''}" onclick="switchImg(this,'${t}')">
+        <img src="${t}" alt="thumb ${i+1}" loading="lazy"/>
+      </div>`).join('');
+
+    // Info
+    document.getElementById('infoCategory').textContent = p.category;
+    document.getElementById('infoTitle').textContent = p.name;
+    document.getElementById('infoPrice').textContent = `$${p.price.toFixed(2)}`;
+    document.getElementById('infoRating').textContent = p.rating;
+    document.getElementById('infoReviews').textContent = `(${p.reviews} reviews)`;
+    document.getElementById('bigRating').textContent = p.rating;
+    document.getElementById('reviewBadge').textContent = `(${p.reviews})`;
+
+    // Stars
+    document.getElementById('infoStars').innerHTML = starHTML(p.rating);
+
+    // Old price & savings
+    if (p.old) {
+      document.getElementById('infoOldPrice').textContent = `$${p.old.toFixed(2)}`;
+      const save = Math.round(((p.old - p.price) / p.old) * 100);
+      const saveEl = document.getElementById('infoSave');
+      saveEl.textContent = `Save ${save}%`;
+      saveEl.style.display = 'inline-block';
+    }
+
+    // Hide size for non-fashion/sports
+    if (!['Fashion','Sports'].includes(p.category)) {
+      document.getElementById('sizeSection').style.display = 'none';
+    }
+
+    // Description tab
+    document.getElementById('descText').textContent = p.desc;
+    document.getElementById('featuresList').innerHTML = p.features.map(f =>
+      `<li><i class="fas fa-check-circle"></i> ${f}</li>`).join('');
+
+    // Specs tab
+    document.getElementById('specsTable').innerHTML = p.specs.map(([k,v]) =>
+      `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+    // Reviews
+    buildReviews(p);
+
+    // Related
+    buildRelated(p);
+  }
+
+  /* ── STARS ─────────────────────────────────────── */
+  function starHTML(r) {
+    const full = Math.floor(r);
+    const half = r % 1 >= 0.5;
+    let s = '';
+    for (let i = 0; i < full; i++) s += '<i class="fas fa-star"></i>';
+    if (half) s += '<i class="fas fa-star-half-alt"></i>';
+    for (let i = full + (half?1:0); i < 5; i++) s += '<i class="far fa-star"></i>';
+    return s;
+  }
+
+  /* ── REVIEWS ───────────────────────────────────── */
+  function buildReviews(p) {
+    const bars = [
+      { label:'5 ★', pct: 65 }, { label:'4 ★', pct: 20 },
+      { label:'3 ★', pct: 10 }, { label:'2 ★', pct: 3 }, { label:'1 ★', pct: 2 }
+    ];
+    document.getElementById('ratingBars').innerHTML = bars.map(b => `
+      <div class="rating-bar-row">
+        <span style="width:36px;text-align:right">${b.label}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${b.pct}%"></div></div>
+        <span style="width:32px;color:var(--muted)">${b.pct}%</span>
+      </div>`).join('');
+
+    const colors = ['#FF6B35','#1A1A2E','#10B981','#6366F1','#F59E0B'];
+    document.getElementById('reviewCards').innerHTML = p.reviewList.map((r, i) => `
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar" style="background:${colors[i%colors.length]}">${r.name.charAt(0)}</div>
+          <div>
+            <div class="review-name">${r.name}</div>
+            <div class="review-date">${r.date}</div>
+          </div>
+          <div style="margin-left:auto">
+            <span class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+          </div>
+        </div>
+        <div class="review-text">${r.text}</div>
+        <div class="verified"><i class="fas fa-check-circle"></i> Verified Purchase</div>
+      </div>`).join('');
+  }
+
+  /* ── RELATED ───────────────────────────────────── */
+  function buildRelated(p) {
+    const related = allProducts.filter(x => x.id !== p.id && x.category === p.category).slice(0, 4);
+    const fallback = allProducts.filter(x => x.id !== p.id).slice(0, 4);
+    const list = related.length >= 2 ? related : fallback;
+
+    document.getElementById('relatedGrid').innerHTML = list.map(r => `
+      <div class="product-card" onclick="goTo(${r.id})">
+        <div class="product-img">
+          <img src="${r.img}" alt="${r.name}" loading="lazy"/>
+          <span class="product-badge ${r.badge==='New'?'new':r.badge==='Sale'?'sale':''}">${r.badge}</span>
+        </div>
+        <div class="product-info-card">
+          <div class="product-name-card">${r.name}</div>
+          <div class="product-footer-card">
+            <span class="price-card">$${r.price.toFixed(2)}</span>
+            <button class="add-btn-card" onclick="event.stopPropagation(); quickAdd(${r.id})">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  /* ── INTERACTIONS ──────────────────────────────── */
+  function switchImg(el, src) {
+    document.getElementById('mainImg').src = src;
+    document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function selectColor(el, name) {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('selectedColor').textContent = name;
+  }
+
+  function selectSize(el, size) {
+    if (el.classList.contains('unavailable')) return;
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('selectedSize').textContent = size;
+  }
+
+  function changeQty(delta) {
+    qty = Math.max(1, Math.min(12, qty + delta));
+    document.getElementById('qtyDisplay').textContent = qty;
+  }
+
+  function switchTab(el, tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+  }
+
+  function toggleWishlist() {
+    wishlisted = !wishlisted;
+    const btn = document.getElementById('wishlistBtn');
+    btn.classList.toggle('active', wishlisted);
+    btn.innerHTML = wishlisted ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>';
+    showNotification(wishlisted ? `❤️ Added to wishlist!` : `💔 Removed from wishlist.`);
+  }
+
+  /* ── CART ──────────────────────────────────────── */
+  function saveCart() { localStorage.setItem('shopnest_cart', JSON.stringify(cart)); }
+  function updateBadge() {
+    document.getElementById('cartCount').textContent = cart.reduce((s,i) => s+i.qty, 0);
+  }
+
+  function addToCart() {
+    const p = currentProduct;
+    const existing = cart.find(x => x.id === p.id);
+    if (existing) existing.qty += qty;
+    else cart.push({ ...p, qty });
+    saveCart(); updateBadge();
+    showNotification(`✅ ${qty}x "${p.name}" added to cart!`);
+  }
+
+  function buyNow() {
+    addToCart();
+    setTimeout(() => window.location.href = 'cart.html', 600);
+  }
+
+  function quickAdd(id) {
+    const p = allProducts.find(x => x.id === id);
+    if (!p) return;
+    const existing = cart.find(x => x.id === id);
+    if (existing) existing.qty++;
+    else cart.push({ ...p, qty: 1 });
+    saveCart(); updateBadge();
+    showNotification(`✅ "${p.name}" added to cart!`);
+  }
+
+  function goTo(id) { window.location.href = `product-detail.html?id=${id}`; }
+
+  /* ── NOTIFICATION ──────────────────────────────── */
+  function showNotification(msg) {
+    const el = document.getElementById('notification');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  /* ── HAMBURGER ─────────────────────────────────── */
+  function toggleMenu() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+    document.getElementById('hamburger').classList.toggle('active');
+  }
+
+  /* ── INIT ──────────────────────────────────────── */
+  loadProduct();
+  updateBadge();
+</script>
+</body>
+</html>

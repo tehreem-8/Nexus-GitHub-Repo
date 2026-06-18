@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShopNest – Checkout</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --primary:      #FF6B35;
+      --primary-dark: #e85a22;
+      --secondary:    #1A1A2E;
+      --bg:           #F8F9FA;
+      --card-bg:      #FFFFFF;
+      --text:         #1A1A2E;
+      --muted:        #6B7280;
+      --border:       #E5E7EB;
+      --success:      #10B981;
+      --danger:       #EF4444;
+      --radius:       12px;
+      --shadow:       0 4px 20px rgba(0,0,0,0.08);
+      --transition:   0.25s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    h1,h2,h3,h4 { font-family: 'Poppins', sans-serif; }
+    a { text-decoration: none; color: inherit; }
+
+    /* NOTIFICATION */
+    #notification {
+      position: fixed; top: 80px; right: 20px; z-index: 9999;
+      background: var(--secondary); color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 0.9rem; font-weight: 500;
+      transform: translateX(120%); transition: transform 0.35s ease;
+      border-left: 4px solid var(--primary); max-width: 300px;
+    }
+    #notification.show { transform: translateX(0); }
+
+    /* NAVBAR */
+    .navbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--secondary); padding: 0 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    .nav-logo { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .nav-logo span { color: var(--primary); }
+    .nav-links { display: flex; align-items: center; gap: 8px; list-style: none; }
+    .nav-links a {
+      color: rgba(255,255,255,0.85); font-size: 0.88rem; font-weight: 500;
+      padding: 6px 10px; border-radius: 6px;
+      transition: color var(--transition), background var(--transition);
+    }
+    .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .nav-cart { position: relative; color: rgba(255,255,255,0.85); font-size: 1.2rem; padding: 6px 10px; }
+    .cart-badge {
+      position: absolute; top: 0; right: 2px;
+      background: var(--primary); color: #fff;
+      font-size: 0.65rem; font-weight: 700;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+    .hamburger span { width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.3s; }
+    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0;
+      background: var(--secondary); z-index: 999;
+      padding: 16px 5% 24px; flex-direction: column; gap: 4px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { color: rgba(255,255,255,0.85); padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-weight: 500; }
+
+    /* PAGE HEADER */
+    .page-header { background: var(--secondary); padding: 36px 5%; }
+    .page-header h1 { color: #fff; font-size: clamp(1.5rem, 3vw, 2rem); }
+    .page-header h1 span { color: var(--primary); }
+    .breadcrumb { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-top: 4px; flex-wrap: wrap; }
+    .breadcrumb a { color: rgba(255,255,255,0.5); transition: color var(--transition); }
+    .breadcrumb a:hover { color: var(--primary); }
+    .breadcrumb i { font-size: 0.6rem; }
+
+    /* PROGRESS STEPS */
+    .progress-bar { background: #fff; padding: 20px 5%; border-bottom: 1px solid var(--border); }
+    .steps { display: flex; align-items: center; max-width: 500px; margin: 0 auto; }
+    .step { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    .step.active { color: var(--primary); }
+    .step.done { color: var(--success); }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--border); color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+    }
+    .step.active .step-num { background: var(--primary); color: #fff; }
+    .step.done .step-num { background: var(--success); color: #fff; }
+    .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 8px; }
+    .step-line.done { background: var(--success); }
+
+    /* LAYOUT */
+    .checkout-layout {
+      display: grid; grid-template-columns: 1fr 380px;
+      gap: 24px; padding: 32px 5%; max-width: 1200px; margin: 0 auto;
+    }
+
+    /* FORM CARD */
+    .form-card {
+      background: var(--card-bg); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .form-section {
+      padding: 24px; border-bottom: 1px solid var(--border);
+    }
+    .form-section:last-child { border-bottom: none; }
+    .section-title-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+    }
+    .section-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(255,107,53,0.1);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-size: 1rem; flex-shrink: 0;
+    }
+    .section-title-row h2 { font-size: 1rem; font-weight: 700; }
+
+    /* FORM ELEMENTS */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-row.single { grid-template-columns: 1fr; }
+    .form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label {
+      font-size: 0.82rem; font-weight: 600; color: var(--text);
+    }
+    .form-group label span { color: var(--danger); }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 11px 14px; border-radius: 8px;
+      border: 2px solid var(--border); font-size: 0.9rem;
+      font-family: 'Inter', sans-serif; outline: none;
+      background: var(--bg);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
+      background: #fff;
+    }
+    .form-group input.error { border-color: var(--danger); }
+    .error-msg { font-size: 0.75rem; color: var(--danger); display: none; }
+    .error-msg.show { display: block; }
+    .form-group input.valid { border-color: var(--success); }
+
+    /* SHIPPING OPTIONS */
+    .shipping-options { display: flex; flex-direction: column; gap: 10px; }
+    .shipping-option {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border-radius: 10px;
+      border: 2px solid var(--border); cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .shipping-option.selected { border-color: var(--primary); background: rgba(255,107,53,0.04); }
+    .shipping-option input[type="radio"] { accent-color: var(--primary); width: 18px; height: 18px; flex-shrink: 0; }
+    .ship-info { flex: 1; }
+    .ship-name { font-weight: 600; font-size: 0.92rem; }
+    .ship-desc { font-size: 0.78rem; color: var(--muted); }
+    .ship-price { font-weight: 700; color: var(--primary); font-family: 'Poppins', sans-serif; }
+
+    /* PAYMENT TABS */
+    .payment-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .pay-tab {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: 10px;
+      border: 2px solid var(--border); cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; background: #fff;
+      transition: all var(--transition); font-family: 'Poppins', sans-serif;
+    }
+    .pay-tab.active { border-color: var(--primary); background: rgba(255,107,53,0.06); color: var(--primary); }
+    .pay-tab i { font-size: 1rem; }
+
+    /* CARD UI */
+    .card-visual {
+      background: linear-gradient(135deg, var(--secondary), #0f3460);
+      border-radius: 14px; padding: 22px 24px; margin-bottom: 20px;
+      color: #fff; position: relative; overflow: hidden;
+      min-height: 150px;
+    }
+    .card-visual::before {
+      content: ''; position: absolute;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(255,107,53,0.15);
+      top: -60px; right: -40px;
+    }
+    .card-chip { width: 40px; height: 30px; background: var(--accent, #FFD700); border-radius: 6px; margin-bottom: 20px; }
+    .card-number-display { font-size: 1.1rem; letter-spacing: 3px; font-family: 'Poppins', sans-serif; margin-bottom: 16px; color: rgba(255,255,255,0.9); }
+    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+    .card-label { font-size: 0.65rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+    .card-value { font-size: 0.9rem; font-weight: 600; }
+    .card-brand { font-size: 1.4rem; opacity: 0.8; }
+
+    /* PAYMENT FIELDS */
+    .payment-fields { display: none; }
+    .payment-fields.active { display: block; }
+    .card-input-wrapper { position: relative; }
+    .card-input-wrapper i {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: 1rem;
+    }
+    .card-brands {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+    }
+    .brand-badge {
+      padding: 4px 10px; border-radius: 6px;
+      border: 1px solid var(--border); font-size: 0.75rem;
+      font-weight: 700; color: var(--muted);
+    }
+
+    /* UPI / COD */
+    .upi-section { text-align: center; padding: 20px 0; }
+    .upi-section .upi-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upi-section p { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+    .cod-section { padding: 20px 0; }
+    .cod-info {
+      background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 10px; padding: 16px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .cod-info i { color: var(--success); font-size: 1.2rem; margin-top: 2px; }
+    .cod-info p { font-size: 0.88rem; color: var(--text); }
+
+    /* ORDER SUMMARY */
+    .summary-card {
+      background: var(--card-bg); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px;
+      height: fit-content; position: sticky; top: 88px;
+    }
+    .summary-card h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; }
+    .summary-items { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; max-height: 260px; overflow-y: auto; }
+    .summary-item { display: flex; gap: 12px; align-items: center; }
+    .s-img {
+      width: 52px; height: 52px; border-radius: 8px;
+      overflow: hidden; flex-shrink: 0; background: #f3f4f6;
+    }
+    .s-img img { width: 100%; height: 100%; object-fit: cover; }
+    .s-info { flex: 1; min-width: 0; }
+    .s-name { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .s-qty { font-size: 0.75rem; color: var(--muted); }
+    .s-price { font-weight: 700; color: var(--primary); font-size: 0.88rem; font-family: 'Poppins', sans-serif; flex-shrink: 0; }
+
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+    .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.88rem; }
+    .summary-row .label { color: var(--muted); }
+    .summary-row .value { font-weight: 600; }
+    .summary-row.discount .value { color: var(--success); }
+    .summary-row.total { font-size: 1rem; font-weight: 700; border-top: 2px solid var(--border); margin-top: 6px; padding-top: 12px; }
+    .summary-row.total .value { color: var(--primary); font-size: 1.15rem; }
+
+    .place-order-btn {
+      width: 100%; background: var(--primary); color: #fff;
+      padding: 15px; border-radius: 30px; border: none;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 16px;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    }
+    .place-order-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255,107,53,0.3);
+    }
+    .secure-note {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; font-size: 0.78rem; color: var(--muted);
+      margin-top: 12px;
+    }
+    .secure-note i { color: var(--success); }
+
+    /* SUCCESS OVERLAY */
+    .success-overlay {
+      display: none; position: fixed;
+      inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 9999; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .success-overlay.show { display: flex; }
+    .success-card {
+      background: #fff; border-radius: 20px;
+      padding: 48px 40px; text-align: center;
+      max-width: 440px; width: 90%;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .success-icon {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: rgba(16,185,129,0.1); margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; color: var(--success);
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.3); }
+      50%       { box-shadow: 0 0 0 14px rgba(16,185,129,0); }
+    }
+    .success-card h2 { font-size: 1.6rem; margin-bottom: 10px; color: var(--text); }
+    .success-card p { color: var(--muted); margin-bottom: 8px; font-size: 0.95rem; }
+    .order-id { font-size: 0.85rem; color: var(--primary); font-weight: 700; margin-bottom: 24px; }
+    .success-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .btn-home {
+      background: var(--primary); color: #fff;
+      padding: 12px 24px; border-radius: 30px; border: none;
+      font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif;
+      transition: background var(--transition);
+    }
+    .btn-home:hover { background: var(--primary-dark); }
+    .btn-track {
+      background: transparent; color: var(--secondary);
+      padding: 12px 24px; border-radius: 30px;
+      border: 2px solid var(--border); font-weight: 600;
+      cursor: pointer; font-family: 'Poppins', sans-serif;
+      transition: border-color var(--transition);
+    }
+    .btn-track:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* FOOTER */
+    .mini-footer {
+      background: var(--secondary); color: rgba(255,255,255,0.5);
+      text-align: center; padding: 20px 5%; font-size: 0.83rem; margin-top: 48px;
+    }
+    .mini-footer span { color: var(--primary); }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .checkout-layout { grid-template-columns: 1fr; }
+      .summary-card { position: static; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .form-row { grid-template-columns: 1fr; }
+      .form-row.triple { grid-template-columns: 1fr 1fr; }
+      .checkout-layout { padding: 16px 4%; }
+      .steps { gap: 0; }
+      .step span { display: none; }
+      .payment-tabs { gap: 8px; }
+      .pay-tab { padding: 8px 12px; font-size: 0.82rem; }
+      .success-card { padding: 32px 24px; }
+    }
+    @media (max-width: 380px) {
+      .form-row.triple { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="notification"></div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="success-icon"><i class="fas fa-check"></i></div>
+    <h2>Order Placed! 🎉</h2>
+    <p>Thank you for shopping with ShopNest.</p>
+    <p>Your order has been confirmed and will be delivered in <strong>3–5 business days</strong>.</p>
+    <div class="order-id" id="orderId">Order #SN-000000</div>
+    <div class="success-btns">
+      <button class="btn-home" onclick="window.location.href='index.html'">
+        <i class="fas fa-home"></i> Back to Home
+      </button>
+      <button class="btn-track" onclick="showNotification('📦 Tracking coming soon!')">
+        <i class="fas fa-truck"></i> Track Order
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">Shop<span>Nest</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="index.html#featured">Products</a></li>
+    <li><a href="index.html#deals">Deals</a></li>
+    <li><a href="cart.html">Cart</a></li>
+    <li><a href="checkout.html" style="color:var(--primary)">Checkout</a></li>
+  </ul>
+  <a href="cart.html" class="nav-cart">
+    <i class="fas fa-shopping-cart"></i>
+    <span class="cart-badge" id="cartCount">0</span>
+  </a>
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html">🏠 Home</a>
+  <a href="index.html#featured">🛍️ Products</a>
+  <a href="cart.html">🛒 Cart</a>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <h1>Secure <span>Checkout</span></h1>
+  <div class="breadcrumb">
+    <a href="index.html">Home</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="cart.html">Cart</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Checkout</span>
+  </div>
+</div>
+
+<!-- PROGRESS STEPS -->
+<div class="progress-bar">
+  <div class="steps">
+    <div class="step done">
+      <div class="step-num"><i class="fas fa-check" style="font-size:0.7rem"></i></div>
+      <span>Cart</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step active">
+      <div class="step-num">2</div>
+      <span>Checkout</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <span>Confirmation</span>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT LAYOUT -->
+<div class="checkout-layout">
+
+  <!-- LEFT: FORM -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- CONTACT INFO -->
+    <div class="form-card">
+      <div class="form-section">
+        <div class="section-title-row">
+          <div class="section-icon"><i class="fas fa-user"></i></div>
+          <h2>Contact Information</h2>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name <span>*</span></label>
+            <input type="text" id="firstName" placeholder="Sarah" oninput="validateField(this)"/>
+            <span class="error-msg" id="firstName-err">Please enter your first name</span>
+          </div>
+          <div class="form-group">
+            <label>Last Name <span>*</span></label>
+            <input type="text" id="lastName" placeholder="Ahmed" oninput="validateField(this)"/>
+            <span class="error-msg" id="lastName-err">Please enter your last name</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email Address <span>*</span></label>
+            <input type="email" id="email" placeholder="sarah@email.com" oninput="validateEmail(this)"/>
+            <span class="error-msg" id="email-err">Please enter a valid email</span>
+          </div>
+          <div class="form-group">
+            <label>Phone Number <span>*</span></label>
+            <input type="tel" id="phone" placeholder="+92 300 0000000" oninput="validatePhone(this)"/>
+            <span class="error-msg" id="phone-err">Please enter a valid phone number</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHIPPING ADDRESS -->
+    <div class="form-card">
+      <div class="form-section">
+        <div class="section-title-row">
+          <div class="section-icon"><i class="fas fa-map-marker-alt"></i></div>
+          <h2>Shipping Address</h2>
+        </div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label>Street Address <span>*</span></label>
+            <input type="text" id="address" placeholder="House 12, Street 4, Block B" oninput="validateField(this)"/>
+            <span class="error-msg" id="address-err">Please enter your address</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>City <span>*</span></label>
+            <input type="text" id="city" placeholder="Karachi" oninput="validateField(this)"/>
+            <span class="error-msg" id="city-err">Please enter your city</span>
+          </div>
+          <div class="form-group">
+            <label>State / Province</label>
+            <input type="text" id="state" placeholder="Sindh"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>ZIP / Postal Code <span>*</span></label>
+            <input type="text" id="zip" placeholder="75000" oninput="validateField(this)"/>
+            <span class="error-msg" id="zip-err">Please enter your ZIP code</span>
+          </div>
+          <div class="form-group">
+            <label>Country <span>*</span></label>
+            <select id="country">
+              <option value="">Select country</option>
+              <option value="pk" selected>Pakistan</option>
+              <option value="us">United States</option>
+              <option value="uk">United Kingdom</option>
+              <option value="ae">UAE</option>
+              <option value="ca">Canada</option>
+              <option value="au">Australia</option>
+              <option value="in">India</option>
+              <option value="sa">Saudi Arabia</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label>Delivery Notes (Optional)</label>
+            <input type="text" id="notes" placeholder="e.g. Leave at the door, ring the bell twice"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHIPPING METHOD -->
+    <div class="form-card">
+      <div class="form-section">
+        <div class="section-title-row">
+          <div class="section-icon"><i class="fas fa-truck"></i></div>
+          <h2>Shipping Method</h2>
+        </div>
+        <div class="shipping-options">
+          <label class="shipping-option selected" onclick="selectShipping(this, 0)">
+            <input type="radio" name="shipping" value="0" checked/>
+            <div class="ship-info">
+              <div class="ship-name">🚀 Standard Delivery</div>
+              <div class="ship-desc">3–5 business days</div>
+            </div>
+            <div class="ship-price">Free</div>
+          </label>
+          <label class="shipping-option" onclick="selectShipping(this, 4.99)">
+            <input type="radio" name="shipping" value="4.99"/>
+            <div class="ship-info">
+              <div class="ship-name">⚡ Express Delivery</div>
+              <div class="ship-desc">1–2 business days</div>
+            </div>
+            <div class="ship-price">$4.99</div>
+          </label>
+          <label class="shipping-option" onclick="selectShipping(this, 14.99)">
+            <input type="radio" name="shipping" value="14.99"/>
+            <div class="ship-info">
+              <div class="ship-name">🌙 Same Day Delivery</div>
+              <div class="ship-desc">Delivered today (order before 2pm)</div>
+            </div>
+            <div class="ship-price">$14.99</div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT -->
+    <div class="form-card">
+      <div class="form-section">
+        <div class="section-title-row">
+          <div class="section-icon"><i class="fas fa-credit-card"></i></div>
+          <h2>Payment Method</h2>
+        </div>
+
+        <!-- PAYMENT TABS -->
+        <div class="payment-tabs">
+          <button class="pay-tab active" onclick="switchPayment(this,'card')">
+            <i class="fas fa-credit-card"></i> Card
+          </button>
+          <button class="pay-tab" onclick="switchPayment(this,'upi')">
+            <i class="fas fa-mobile-alt"></i> UPI / EasyPaisa
+          </button>
+          <button class="pay-tab" onclick="switchPayment(this,'cod')">
+            <i class="fas fa-money-bill-wave"></i> Cash on Delivery
+          </button>
+        </div>
+
+        <!-- CARD PAYMENT -->
+        <div class="payment-fields active" id="pay-card">
+          <!-- Live card visual -->
+          <div class="card-visual">
+            <div class="card-chip"></div>
+            <div class="card-number-display" id="cardNumDisplay">•••• •••• •••• ••••</div>
+            <div class="card-bottom">
+              <div>
+                <div class="card-label">Card Holder</div>
+                <div class="card-value" id="cardNameDisplay">YOUR NAME</div>
+              </div>
+              <div>
+                <div class="card-label">Expires</div>
+                <div class="card-value" id="cardExpDisplay">MM/YY</div>
+              </div>
+              <div class="card-brand" id="cardBrandIcon"><i class="fas fa-credit-card"></i></div>
+            </div>
+          </div>
+
+          <div class="form-row single" style="margin-bottom:14px">
+            <div class="form-group">
+              <label>Cardholder Name <span>*</span></label>
+              <input type="text" id="cardName" placeholder="Sarah Ahmed"
+                oninput="document.getElementById('cardNameDisplay').textContent = this.value.toUpperCase() || 'YOUR NAME'"/>
+            </div>
+          </div>
+          <div class="form-row single" style="margin-bottom:14px">
+            <div class="form-group">
+              <label>Card Number <span>*</span></label>
+              <div class="card-input-wrapper">
+                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456"
+                  maxlength="19" oninput="formatCardNumber(this)"/>
+                <i class="fas fa-lock"></i>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Expiry Date <span>*</span></label>
+              <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5"
+                oninput="formatExpiry(this)"/>
+            </div>
+            <div class="form-group">
+              <label>CVV <span>*</span></label>
+              <div class="card-input-wrapper">
+                <input type="password" id="cardCvv" placeholder="•••" maxlength="4"/>
+                <i class="fas fa-question-circle" title="3 digits on back of card"></i>
+              </div>
+            </div>
+          </div>
+          <div class="card-brands">
+            <span class="brand-badge">VISA</span>
+            <span class="brand-badge">Mastercard</span>
+            <span class="brand-badge">Amex</span>
+            <span class="brand-badge">JCB</span>
+          </div>
+        </div>
+
+        <!-- UPI PAYMENT -->
+        <div class="payment-fields" id="pay-upi">
+          <div class="upi-section">
+            <div class="upi-icon">📱</div>
+            <p>Pay instantly using EasyPaisa, JazzCash, or any UPI app.</p>
+            <div class="form-group" style="max-width:360px;margin:0 auto">
+              <label>UPI / Mobile Number <span>*</span></label>
+              <input type="text" id="upiId" placeholder="03XX-XXXXXXX or UPI ID"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- COD -->
+        <div class="payment-fields" id="pay-cod">
+          <div class="cod-section">
+            <div class="cod-info">
+              <i class="fas fa-info-circle"></i>
+              <p>Pay with cash when your order is delivered. Our delivery partner will collect payment at your doorstep. Please have the exact amount ready.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: ORDER SUMMARY -->
+  <div>
+    <div class="summary-card">
+      <h2>Order Summary</h2>
+
+      <div class="summary-items" id="summaryItems">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="summary-row">
+        <span class="label">Subtotal</span>
+        <span class="value" id="summarySubtotal">$0.00</span>
+      </div>
+      <div class="summary-row discount" id="discountRow" style="display:none">
+        <span class="label">Discount</span>
+        <span class="value" id="summaryDiscount">-$0.00</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Shipping</span>
+        <span class="value" id="summaryShipping">Free</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Tax (8%)</span>
+        <span class="value" id="summaryTax">$0.00</span>
+      </div>
+      <div class="summary-row total">
+        <span class="label">Total</span>
+        <span class="value" id="summaryTotal">$0.00</span>
+      </div>
+
+      <button class="place-order-btn" onclick="placeOrder()">
+        <i class="fas fa-lock"></i> Place Order
+      </button>
+
+      <div class="secure-note">
+        <i class="fas fa-shield-alt"></i>
+        Your information is encrypted and secure
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="mini-footer">© 2026 <span>ShopNest</span>. All rights reserved.</div>
+
+<script>
+  /* ── STATE ──────────────────────────────────────── */
+  let cart = JSON.parse(localStorage.getItem('shopnest_cart') || '[]');
+  let shippingCost = 0;
+  let activePayment = 'card';
+  const TAX = 0.08;
+
+  /* ── HELPERS ────────────────────────────────────── */
+  function saveCart() { localStorage.setItem('shopnest_cart', JSON.stringify(cart)); }
+
+  function showNotification(msg) {
+    const el = document.getElementById('notification');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  function toggleMenu() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+    document.getElementById('hamburger').classList.toggle('active');
+  }
+
+  function updateCartBadge() {
+    document.getElementById('cartCount').textContent = cart.reduce((s,i) => s+i.qty, 0);
+  }
+
+  /* ── RENDER SUMMARY ─────────────────────────────── */
+  function renderSummary() {
+    const subtotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
+    const tax = subtotal * TAX;
+    const total = subtotal + tax + shippingCost;
+
+    document.getElementById('summarySubtotal').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('summaryTax').textContent = `$${tax.toFixed(2)}`;
+    document.getElementById('summaryShipping').textContent = shippingCost === 0 ? '🎉 Free' : `$${shippingCost.toFixed(2)}`;
+    document.getElementById('summaryTotal').textContent = `$${total.toFixed(2)}`;
+
+    if (cart.length === 0) {
+      document.getElementById('summaryItems').innerHTML =
+        `<p style="color:var(--muted);font-size:0.88rem;text-align:center;padding:16px 0">Your cart is empty.<br><a href="index.html" style="color:var(--primary);font-weight:600">Shop now →</a></p>`;
+      return;
+    }
+
+    document.getElementById('summaryItems').innerHTML = cart.map(item => `
+      <div class="summary-item">
+        <div class="s-img"><img src="${item.img}" alt="${item.name}" loading="lazy"/></div>
+        <div class="s-info">
+          <div class="s-name">${item.name}</div>
+          <div class="s-qty">Qty: ${item.qty}</div>
+        </div>
+        <div class="s-price">$${(item.price * item.qty).toFixed(2)}</div>
+      </div>`).join('');
+  }
+
+  /* ── SHIPPING ───────────────────────────────────── */
+  function selectShipping(el, cost) {
+    document.querySelectorAll('.shipping-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    shippingCost = cost;
+    renderSummary();
+  }
+
+  /* ── PAYMENT TABS ───────────────────────────────── */
+  function switchPayment(el, method) {
+    document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.payment-fields').forEach(f => f.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`pay-${method}`).classList.add('active');
+    activePayment = method;
+  }
+
+  /* ── CARD FORMATTING ────────────────────────────── */
+  function formatCardNumber(input) {
+    let val = input.value.replace(/\D/g,'').substring(0,16);
+    input.value = val.replace(/(.{4})/g,'$1 ').trim();
+    const display = val.padEnd(16,'•').replace(/(.{4})/g,'$1 ').trim();
+    document.getElementById('cardNumDisplay').textContent = display;
+    // Detect brand
+    const brand = document.getElementById('cardBrandIcon');
+    if (val.startsWith('4')) brand.innerHTML = '<i class="fab fa-cc-visa"></i>';
+    else if (/^5[1-5]/.test(val)) brand.innerHTML = '<i class="fab fa-cc-mastercard"></i>';
+    else if (val.startsWith('3')) brand.innerHTML = '<i class="fab fa-cc-amex"></i>';
+    else brand.innerHTML = '<i class="fas fa-credit-card"></i>';
+  }
+
+  function formatExpiry(input) {
+    let val = input.value.replace(/\D/g,'').substring(0,4);
+    if (val.length >= 2) val = val.slice(0,2) + '/' + val.slice(2);
+    input.value = val;
+    document.getElementById('cardExpDisplay').textContent = val || 'MM/YY';
+  }
+
+  /* ── VALIDATION ─────────────────────────────────── */
+  function validateField(input) {
+    const err = document.getElementById(`${input.id}-err`);
+    if (!input.value.trim()) {
+      input.classList.add('error'); input.classList.remove('valid');
+      if (err) err.classList.add('show');
+      return false;
+    }
+    input.classList.remove('error'); input.classList.add('valid');
+    if (err) err.classList.remove('show');
+    return true;
+  }
+
+  function validateEmail(input) {
+    const err = document.getElementById(`${input.id}-err`);
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value);
+    if (!valid) {
+      input.classList.add('error'); input.classList.remove('valid');
+      if (err) err.classList.add('show');
+      return false;
+    }
+    input.classList.remove('error'); input.classList.add('valid');
+    if (err) err.classList.remove('show');
+    return true;
+  }
+
+  function validatePhone(input) {
+    const err = document.getElementById(`${input.id}-err`);
+    const valid = input.value.replace(/\D/g,'').length >= 10;
+    if (!valid) {
+      input.classList.add('error'); input.classList.remove('valid');
+      if (err) err.classList.add('show');
+      return false;
+    }
+    input.classList.remove('error'); input.classList.add('valid');
+    if (err) err.classList.remove('show');
+    return true;
+  }
+
+  function validateAll() {
+    const required = ['firstName','lastName','address','city','zip'];
+    let valid = true;
+
+    required.forEach(id => {
+      const el = document.getElementById(id);
+      if (!validateField(el)) valid = false;
+    });
+    if (!validateEmail(document.getElementById('email'))) valid = false;
+    if (!validatePhone(document.getElementById('phone'))) valid = false;
+
+    if (!document.getElementById('country').value) {
+      showNotification('⚠️ Please select a country.'); valid = false;
+    }
+
+    if (activePayment === 'card') {
+      const cn = document.getElementById('cardNumber').value.replace(/\s/g,'');
+      const ce = document.getElementById('cardExpiry').value;
+      const cv = document.getElementById('cardCvv').value;
+      const hn = document.getElementById('cardName').value;
+      if (!hn || cn.length < 16 || ce.length < 5 || cv.length < 3) {
+        showNotification('⚠️ Please fill in all card details.'); valid = false;
+      }
+    }
+    if (activePayment === 'upi') {
+      if (!document.getElementById('upiId').value.trim()) {
+        showNotification('⚠️ Please enter your UPI / mobile number.'); valid = false;
+      }
+    }
+
+    return valid;
+  }
+
+  /* ── PLACE ORDER ────────────────────────────────── */
+  function placeOrder() {
+    if (cart.length === 0) {
+      showNotification('⚠️ Your cart is empty!'); return;
+    }
+    if (!validateAll()) {
+      showNotification('⚠️ Please fill in all required fields.');
+      return;
+    }
+
+    // Generate order ID
+    const orderId = 'SN-' + Math.random().toString(36).substring(2,8).toUpperCase();
+    document.getElementById('orderId').textContent = `Order #${orderId}`;
+
+    // Clear cart
+    cart = [];
+    saveCart();
+    updateCartBadge();
+
+    // Show success
+    document.getElementById('successOverlay').classList.add('show');
+  }
+
+  /* ── INIT ───────────────────────────────────────── */
+  renderSummary();
+  updateCartBadge();
+</script>
+</body>
+</html>
