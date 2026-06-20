@@ -42,8 +42,7 @@
 
 
    
-
-    About the Author
+## 👩‍💻 About the Author
 **Tehreem**
 Frontend Developer | Computer Science Student
 
